@@ -1,0 +1,32 @@
+buildscript {
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath 'org.springframework.boot:spring-boot-gradle-plugin:1.5.20.RELEASE'
+	}
+}
+
+plugins {
+	id 'java'
+}
+
+apply plugin: 'org.springframework.boot'
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	compile group: 'org.apache.derby', name: 'derbyclient', version: '10.14.2.0'
+	compile 'org.springframework.boot:spring-boot-starter-jdbc'
+	testCompile 'org.springframework.boot:spring-boot-starter-test'
+}
+
+test {
+    exclude 'testpack/**'
+}
