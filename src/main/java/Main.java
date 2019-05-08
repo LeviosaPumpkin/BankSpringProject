@@ -29,6 +29,7 @@ public class Main {
 				new AnnotationConfigApplicationContext(BankConfiguration.class);
 		
 		BankDao bankDao = context.getBean(BankDao.class);
-		bankDao.addClient("Mary");
+		//bankDao.addClient("Mary");
+		bankDao.makeAccount(250, 1);
 	}
 }
