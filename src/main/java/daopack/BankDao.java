@@ -1,13 +1,19 @@
 package daopack;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public interface BankDao {
-	public void addClient(String name);
-	public void makeDeposit(double sum, int idClient, int idAccount);
-	public void makeWithdraw(double sum, int idClient, int idAccount);
-	public void makeAccount(double sum, int idClient);
-	//public List<String> getListOfTransactions();
+	void addClient(String name);
+	void makeDeposit(double sum, int idClient, int idAccount);
+	void makeWithdraw(double sum, int idClient, int idAccount);
+	void makeAccount(double sum, int idClient);
+	default List<String> getListOfTransactions(int idClient, String dateFrom, String dateTo){
+		return new ArrayList<String>();
+	};
 	//public String getInfoAboutTransaction(int idTransaction); 
-	default public String getClientsAccounts(int i) {
+	default String getClientsAccounts(int i) {
 		return "";
 	};
+	
 }

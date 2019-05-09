@@ -1,12 +1,14 @@
 package daopack;
 
+import java.util.ArrayList;
+
 /*TO DO:
  * implement transactionManager
  * implement return values of SELECT methods
  */
 
 import java.util.Date;
-
+import java.util.List;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -51,6 +53,13 @@ public class BankDaoImplBD implements BankDao{
 	private static final String SELECT_ACCOUNTS = "SELECT Account.id, Client.Name, Account.balance FROM Account " + 
 			"JOIN Client ON Account.clientId = Client.id " + 
 			"WHERE Account.clientId = ?";
+	private static final String SELECT_CLIENT_TRANSACTIONS = 
+			"SELECT Transactions.clientId, Transactions.accountId, TransactionDict.type, Transactions.sum, CurrencyDict.name, Transactions.date " + 
+			"FROM Transactions " + 
+			"JOIN TransactionDict ON TransactionDict.id=Transactions.type " + 
+			"JOIN CurrencyDict ON CurrencyDict.id=Transactions.currency " + 
+			"WHERE datetime(date) in (datetime(?), datetime(?)) " + 
+			"AND clientId=?";
 	
 	private final DataSource dataSource;
 	
@@ -123,7 +132,32 @@ public class BankDaoImplBD implements BankDao{
 		}catch(SQLException e) {
 			throw new RuntimeException(e);
 		}
-		return result.toString();
+		return result;
+	}
+	
+	public List<String> getListOfTransactions(int idClient, String dateFrom, String dateTo){
+		List<String> result = new ArrayList<>();
+		try (Connection conn = dataSource.getConnection();
+				PreparedStatement ps = conn.prepareStatement(SELECT_CLIENT_TRANSACTIONS)){
+			ps.setString(1, dateFrom);
+			ps.setString(2, dateTo);
+			ps.setInt(3, idClient);
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				String res = rs.getInt("clientId") + " ";
+				res += rs.getInt(2) + " ";
+				res += rs.getString(3) + " ";
+				res += rs.getDouble(4) + " ";
+				res += rs.getString(5) + " ";
+				res += rs.getString(6);
+				result.add(res);
+				System.out.println(res);
+			}
+			
+		}catch(SQLException e) {
+			throw new RuntimeException(e);
+		}
+		return result;
 	}
 
 	private void insertAccount(double sum, int idClient) {
@@ -164,7 +198,7 @@ public class BankDaoImplBD implements BankDao{
 			ps.setInt(3,  type);
 			ps.setDouble(4, sum);
 			ps.setInt(5, currency);
-			DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 			Date date = new Date();
 			ps.setString(6, dateFormat.format(date).toString());
 			ps.executeUpdate();
