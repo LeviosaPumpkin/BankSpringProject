@@ -31,8 +31,9 @@ public class Main {
 		BankDao bankDao = context.getBean(BankDao.class);
 		//bankDao.addClient("Mary");
 		//bankDao.makeAccount(250, 1);
-		bankDao.makeDeposit(1000, 1, 1);
-		bankDao.makeWithdraw(50, 1, 2);
+		//bankDao.makeDeposit(1000, 1, 1);
+		//bankDao.makeWithdraw(50, 1, 2);
+		bankDao.getClientsAccounts(1);
 
 	}
 }

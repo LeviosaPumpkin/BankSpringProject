@@ -7,4 +7,7 @@ public interface BankDao {
 	public void makeAccount(double sum, int idClient);
 	//public List<String> getListOfTransactions();
 	//public String getInfoAboutTransaction(int idTransaction); 
+	default public String getClientsAccounts(int i) {
+		return "";
+	};
 }

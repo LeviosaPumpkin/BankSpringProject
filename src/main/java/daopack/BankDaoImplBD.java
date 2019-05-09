@@ -1,5 +1,10 @@
 package daopack;
 
+/*TO DO:
+ * implement transactionManager
+ * implement return values of SELECT methods
+ */
+
 import java.util.Date;
 
 import java.sql.Connection;
@@ -43,6 +48,9 @@ public class BankDaoImplBD implements BankDao{
 			+ "LIMIT 1";
 	private static final String UPDATE_BALANCE = "UPDATE ACCOUNT SET balance = balance + ? "
 			+ "WHERE clientId=? AND id=?";
+	private static final String SELECT_ACCOUNTS = "SELECT Account.id, Client.Name, Account.balance FROM Account " + 
+			"JOIN Client ON Account.clientId = Client.id " + 
+			"WHERE Account.clientId = ?";
 	
 	private final DataSource dataSource;
 	
@@ -98,6 +106,24 @@ public class BankDaoImplBD implements BankDao{
 		insertAccount(sum, idClient);
 		int idAccount = getLatestCreatedAccount(idClient);
 		insertTransaction(idClient, idAccount, Type.OPEN.getId(), sum, Currency.RUB.getId());
+	}
+	
+	public String getClientsAccounts(int idClient) {
+		String result = "";
+		try (Connection conn = dataSource.getConnection();
+				PreparedStatement ps = conn.prepareStatement(SELECT_ACCOUNTS)){
+			ps.setInt(1, idClient);
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				System.out.print(rs.getInt("id")+"\t");
+				System.out.print(rs.getString("name")+"\t");
+				System.out.println(rs.getDouble("balance"));
+			}
+			
+		}catch(SQLException e) {
+			throw new RuntimeException(e);
+		}
+		return result.toString();
 	}
 
 	private void insertAccount(double sum, int idClient) {
