@@ -41,6 +41,8 @@ public class BankDaoImplBD implements BankDao{
 			+ "WHERE  clientId=? "
 			+ "ORDER BY ID DESC "
 			+ "LIMIT 1";
+	private static final String UPDATE_BALANCE = "UPDATE ACCOUNT SET balance = balance + ? "
+			+ "WHERE clientId=? AND id=?";
 	
 	private final DataSource dataSource;
 	
@@ -57,8 +59,37 @@ public class BankDaoImplBD implements BankDao{
 			throw new RuntimeException(e);
 		}
 	}
-	public void makeDeposit(double sum, int idClient, int idAccount) {}
-	public void makeWithdraw(double sum, int idClient, int idAccount) {}
+	public void makeDeposit(double sum, int idClient, int idAccount) {
+		try (Connection conn = dataSource.getConnection();
+				PreparedStatement ps = conn.prepareStatement(UPDATE_BALANCE)){
+			
+			ps.setDouble(1,  sum);
+			ps.setInt(2, idClient);
+			ps.setInt(3, idAccount);
+			ps.executeUpdate();
+			
+			insertTransaction(idClient, idAccount, Type.DEPOSIT.getId(), sum, Currency.RUB.getId());
+		}catch(SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	public void makeWithdraw(double sum, int idClient, int idAccount) {
+		try (Connection conn = dataSource.getConnection();
+				PreparedStatement ps = conn.prepareStatement(UPDATE_BALANCE)){
+			
+			sum=sum*(-1);
+			ps.setDouble(1,  sum);
+			ps.setInt(2, idClient);
+			ps.setInt(3, idAccount);
+			ps.executeUpdate();
+			
+			insertTransaction(idClient, idAccount, Type.WITHDRAW.getId(), sum, Currency.RUB.getId());
+		}catch(SQLException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
 	public void makeAccount(double sum, int idClient) {
 		if(sum < 0) {
 			System.out.println("Opening balance cannot be negative");
