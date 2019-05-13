@@ -29,12 +29,12 @@ public class Main {
 				new AnnotationConfigApplicationContext(BankConfiguration.class);
 		
 		BankDao bankDao = context.getBean(BankDao.class);
-		//bankDao.addClient("Mary");
+		bankDao.addClient("");
 		//bankDao.makeAccount(20000, 2);
 		//bankDao.makeDeposit(1000, 1, 1);
 		//bankDao.makeWithdraw(50, 1, 2);
 		//bankDao.getClientsAccounts(1);
-		bankDao.getListOfTransactions(1, "2019-05-08 12:51:12", "2019-05-09 11:06:34");
+		//bankDao.getListOfTransactions(1, "2019-05-08 12:51:12", "2019-05-09 11:06:34");
 
 	}
 }

@@ -3,7 +3,6 @@ package daopack;
 import java.util.ArrayList;
 
 /*TO DO:
- * implement transactionManager
  * implement return values of SELECT methods
  */
 
@@ -17,6 +16,8 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
 import javax.sql.DataSource;
+
+import org.springframework.transaction.annotation.Transactional;
 
 public class BankDaoImplBD implements BankDao{
 	private enum Currency{
@@ -67,6 +68,8 @@ public class BankDaoImplBD implements BankDao{
 		dataSource = ds;
 	}
 	
+	@Transactional(
+			rollbackFor = SQLException.class)
 	public void addClient(String name) {
 		try (Connection conn = dataSource.getConnection();
 				PreparedStatement ps = conn.prepareStatement(INSERT_CLIENT)){
@@ -76,6 +79,9 @@ public class BankDaoImplBD implements BankDao{
 			throw new RuntimeException(e);
 		}
 	}
+	
+	@Transactional(
+			rollbackFor = SQLException.class)
 	public void makeDeposit(double sum, int idClient, int idAccount) {
 		try (Connection conn = dataSource.getConnection();
 				PreparedStatement ps = conn.prepareStatement(UPDATE_BALANCE)){
@@ -91,6 +97,8 @@ public class BankDaoImplBD implements BankDao{
 		}
 	}
 	
+	@Transactional(
+			rollbackFor = SQLException.class)
 	public void makeWithdraw(double sum, int idClient, int idAccount) {
 		try (Connection conn = dataSource.getConnection();
 				PreparedStatement ps = conn.prepareStatement(UPDATE_BALANCE)){
@@ -107,14 +115,20 @@ public class BankDaoImplBD implements BankDao{
 		}
 	}
 	
+	@Transactional(
+			rollbackFor = SQLException.class)
 	public void makeAccount(double sum, int idClient) {
 		if(sum < 0) {
 			System.out.println("Opening balance cannot be negative");
 			return;
 		}
-		insertAccount(sum, idClient);
-		int idAccount = getLatestCreatedAccount(idClient);
-		insertTransaction(idClient, idAccount, Type.OPEN.getId(), sum, Currency.RUB.getId());
+		try {
+			insertAccount(sum, idClient);
+			int idAccount = getLatestCreatedAccount(idClient);
+			insertTransaction(idClient, idAccount, Type.OPEN.getId(), sum, Currency.RUB.getId());
+		}catch(SQLException e) {
+			throw new RuntimeException(e);
+		}
 	}
 	
 	public String getClientsAccounts(int idClient) {
@@ -159,16 +173,17 @@ public class BankDaoImplBD implements BankDao{
 		}
 		return result;
 	}
-
-	private void insertAccount(double sum, int idClient) {
-		try (Connection conn = dataSource.getConnection();
-				PreparedStatement ps = conn.prepareStatement(INSERT_ACCOUNT)){
-			ps.setInt(1,  idClient);
-			ps.setDouble(2, sum);
-			ps.executeUpdate();
-		}catch(SQLException e) {
-			throw new RuntimeException(e);
-		}
+	@Transactional(
+			rollbackFor = SQLException.class)
+	private void insertAccount(double sum, int idClient) throws SQLException{
+		Connection conn = dataSource.getConnection();
+		
+		PreparedStatement ps = conn.prepareStatement(INSERT_ACCOUNT);
+		
+		ps.setInt(1,  idClient);
+		ps.setDouble(2, sum);
+		
+		ps.executeUpdate();
 	}
 	
 	private int getLatestCreatedAccount(int clientId) {
@@ -185,26 +200,28 @@ public class BankDaoImplBD implements BankDao{
 		return accountId;
 	}
 	
+	@Transactional(
+			rollbackFor = SQLException.class)
 	private void insertTransaction(
 			int clientId, 
 			int accountId,
 			int type,
 			double sum, 
-			int currency) {
-		try (Connection conn = dataSource.getConnection();
-				PreparedStatement ps = conn.prepareStatement(INSERT_RUB_TRANSACTION)){
-			ps.setInt(1,  clientId);
-			ps.setInt(2, accountId);
-			ps.setInt(3,  type);
-			ps.setDouble(4, sum);
-			ps.setInt(5, currency);
-			DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-			Date date = new Date();
-			ps.setString(6, dateFormat.format(date).toString());
-			ps.executeUpdate();
-		}catch(SQLException e) {
-			throw new RuntimeException(e);
-		}
+			int currency) throws SQLException{
+		Connection conn = dataSource.getConnection();
+		
+		PreparedStatement ps = conn.prepareStatement(INSERT_RUB_TRANSACTION);
+		
+		ps.setInt(1,  clientId);
+		ps.setInt(2, accountId);
+		ps.setInt(3,  type);
+		ps.setDouble(4, sum);
+		ps.setInt(5, currency);
+		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		Date date = new Date();
+		ps.setString(6, dateFormat.format(date).toString());
+		
+		ps.executeUpdate();
 	}
 
 }
