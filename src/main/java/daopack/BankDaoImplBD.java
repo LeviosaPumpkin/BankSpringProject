@@ -68,8 +68,7 @@ public class BankDaoImplBD implements BankDao{
 		dataSource = ds;
 	}
 	
-	@Transactional(
-			rollbackFor = SQLException.class)
+	@Transactional(rollbackFor = SQLException.class)
 	public void addClient(String name) {
 		try (Connection conn = dataSource.getConnection();
 				PreparedStatement ps = conn.prepareStatement(INSERT_CLIENT)){
@@ -80,8 +79,7 @@ public class BankDaoImplBD implements BankDao{
 		}
 	}
 	
-	@Transactional(
-			rollbackFor = SQLException.class)
+	@Transactional(rollbackFor = SQLException.class)
 	public void makeDeposit(double sum, int idClient, int idAccount) {
 		try (Connection conn = dataSource.getConnection();
 				PreparedStatement ps = conn.prepareStatement(UPDATE_BALANCE)){
@@ -97,8 +95,7 @@ public class BankDaoImplBD implements BankDao{
 		}
 	}
 	
-	@Transactional(
-			rollbackFor = SQLException.class)
+	@Transactional(rollbackFor = SQLException.class)
 	public void makeWithdraw(double sum, int idClient, int idAccount) {
 		try (Connection conn = dataSource.getConnection();
 				PreparedStatement ps = conn.prepareStatement(UPDATE_BALANCE)){
@@ -115,17 +112,22 @@ public class BankDaoImplBD implements BankDao{
 		}
 	}
 	
-	@Transactional(
-			rollbackFor = SQLException.class)
-	public void makeAccount(double sum, int idClient) {
+	@Transactional(rollbackFor = SQLException.class)
+	public void makeAccount(double sum, int idClient, int currency) {
 		if(sum < 0) {
 			System.out.println("Opening balance cannot be negative");
 			return;
 		}
 		try {
-			insertAccount(sum, idClient);
+			if(currency == 1) {
+				insertAccount(sum * 64, idClient);
+			}else if (currency == 2) {
+				insertAccount(sum * 74, idClient);
+			}else if (currency == 3) {
+				insertAccount(sum, idClient);
+			}
 			int idAccount = getLatestCreatedAccount(idClient);
-			insertTransaction(idClient, idAccount, Type.OPEN.getId(), sum, Currency.RUB.getId());
+			insertTransaction(idClient, idAccount, Type.OPEN.getId(), sum, currency);
 		}catch(SQLException e) {
 			throw new RuntimeException(e);
 		}
