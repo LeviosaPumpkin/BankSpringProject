@@ -4,19 +4,23 @@ import javax.sql.DataSource;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.apache.derby.jdbc.ClientDriver;
 
-import daopack.BankDao;
 import daopack.BankDaoImplBD;
 
 @Configuration
 @EnableTransactionManagement
 public class BankConfiguration {
     @Bean
-    public BankDao bankDao() {
-    	return new BankDaoImplBD(dataSource());
+    public BankDaoImplBD bankDao(DataSource dataSource, TransactionTemplate transactionTemplate) {
+    	BankDaoImplBD bankDao = new BankDaoImplBD();
+    	bankDao.setDataSource(dataSource);
+    	return bankDao;
     }
     
     @Bean
@@ -26,4 +30,19 @@ public class BankConfiguration {
     	dataSource.setUrl("jdbc:sqlite:resources/bank.db");
     	return dataSource;
     }
+    
+    @Bean
+    public DataSourceTransactionManager transactionManager(DataSource dataSource) {
+    	DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
+    	transactionManager.setDataSource(dataSource);
+    	return transactionManager;
+    }
+    
+    @Bean
+    public TransactionTemplate transactionTemplate(PlatformTransactionManager transactionManager){
+    	TransactionTemplate transactionTemplate = new TransactionTemplate();
+    	transactionTemplate.setTransactionManager(transactionManager);
+    	return transactionTemplate;
+    }
+	
 }

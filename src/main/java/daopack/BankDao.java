@@ -3,6 +3,8 @@ package daopack;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.sql.DataSource;
+
 public interface BankDao {
 	void addClient(String name);
 	void makeDeposit(double sum, int idClient, int idAccount);
@@ -15,6 +17,6 @@ public interface BankDao {
 	//public String getInfoAboutTransaction(int idTransaction); 
 	default String getClientsAccounts(int i) {
 		return "";
-	};
+	}
 	
 }

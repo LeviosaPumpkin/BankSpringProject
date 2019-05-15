@@ -18,8 +18,9 @@ import java.text.SimpleDateFormat;
 import javax.sql.DataSource;
 
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.support.JdbcDaoSupport;
 
-public class BankDaoImplBD implements BankDao{
+public class BankDaoImplBD extends JdbcDaoSupport implements BankDao{
 	private enum Currency{
 		USD(1), EUR(2), RUB(3);
 		private int id;
@@ -42,7 +43,7 @@ public class BankDaoImplBD implements BankDao{
 	}
 	private static final String INSERT_CLIENT = "INSERT INTO Client (name) VALUES(?)";
 	private static final String INSERT_ACCOUNT = "INSERT INTO Account (clientId, balance) VALUES(?,?)"; 
-	private static final String INSERT_RUB_TRANSACTION = "INSERT INTO Transactions "
+	private static final String INSERT_TRANSACTION = "INSERT INTO Transactions "
 			+ "(clientId, accountId, type, sum, currency, date) "
 			+ "VALUES(?, ?, ?, ?, ?, ?)";
 	private static final String SELECT_LATEST_CREATED_ACCOUNT  = "SELECT ID FROM ACCOUNT "
@@ -61,35 +62,21 @@ public class BankDaoImplBD implements BankDao{
 			"JOIN CurrencyDict ON CurrencyDict.id=Transactions.currency " + 
 			"WHERE datetime(date) in (datetime(?), datetime(?)) " + 
 			"AND clientId=?";
-	
-	private final DataSource dataSource;
-	
-	public BankDaoImplBD(DataSource ds) {
-		dataSource = ds;
+		
+	public BankDaoImplBD() {
+		
 	}
 	
 	@Transactional(rollbackFor = SQLException.class)
 	public void addClient(String name) {
-		try (Connection conn = dataSource.getConnection();
-				PreparedStatement ps = conn.prepareStatement(INSERT_CLIENT)){
-			ps.setString(1,  name);
-			ps.executeUpdate();
-		}catch(SQLException e) {
-			throw new RuntimeException(e);
-		}
+		getJdbcTemplate().update(INSERT_CLIENT, name);
 	}
 	
 	@Transactional(rollbackFor = SQLException.class)
 	public void makeDeposit(double sum, int idClient, int idAccount) {
-		try (Connection conn = dataSource.getConnection();
-				PreparedStatement ps = conn.prepareStatement(UPDATE_BALANCE)){
-			
-			ps.setDouble(1,  sum);
-			ps.setInt(2, idClient);
-			ps.setInt(3, idAccount);
-			ps.executeUpdate();
-			
+		try{
 			insertTransaction(idClient, idAccount, Type.DEPOSIT.getId(), sum, Currency.RUB.getId());
+			getJdbcTemplate().update(UPDATE_BALANCE, sum, idClient, idAccount);
 		}catch(SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -97,18 +84,11 @@ public class BankDaoImplBD implements BankDao{
 	
 	@Transactional(rollbackFor = SQLException.class)
 	public void makeWithdraw(double sum, int idClient, int idAccount) {
-		try (Connection conn = dataSource.getConnection();
-				PreparedStatement ps = conn.prepareStatement(UPDATE_BALANCE)){
-			
-			sum=sum*(-1);
-			ps.setDouble(1,  sum);
-			ps.setInt(2, idClient);
-			ps.setInt(3, idAccount);
-			ps.executeUpdate();
-			
+		try {
+			getJdbcTemplate().update(UPDATE_BALANCE, sum*(-1), idClient, idAccount);
 			insertTransaction(idClient, idAccount, Type.WITHDRAW.getId(), sum, Currency.RUB.getId());
-		}catch(SQLException e) {
-			throw new RuntimeException(e);
+		} catch (SQLException e) {
+			e.printStackTrace();
 		}
 	}
 	
@@ -135,7 +115,7 @@ public class BankDaoImplBD implements BankDao{
 	
 	public String getClientsAccounts(int idClient) {
 		String result = "";
-		try (Connection conn = dataSource.getConnection();
+		/*try (Connection conn = dataSource.getConnection();
 				PreparedStatement ps = conn.prepareStatement(SELECT_ACCOUNTS)){
 			ps.setInt(1, idClient);
 			ResultSet rs = ps.executeQuery();
@@ -147,13 +127,13 @@ public class BankDaoImplBD implements BankDao{
 			
 		}catch(SQLException e) {
 			throw new RuntimeException(e);
-		}
+		}*/
 		return result;
 	}
 	
 	public List<String> getListOfTransactions(int idClient, String dateFrom, String dateTo){
 		List<String> result = new ArrayList<>();
-		try (Connection conn = dataSource.getConnection();
+		/*try (Connection conn = dataSource.getConnection();
 				PreparedStatement ps = conn.prepareStatement(SELECT_CLIENT_TRANSACTIONS)){
 			ps.setString(1, dateFrom);
 			ps.setString(2, dateTo);
@@ -172,58 +152,35 @@ public class BankDaoImplBD implements BankDao{
 			
 		}catch(SQLException e) {
 			throw new RuntimeException(e);
-		}
+		}*/
 		return result;
 	}
 	@Transactional(
 			rollbackFor = SQLException.class)
 	private void insertAccount(double sum, int idClient) throws SQLException{
-		Connection conn = dataSource.getConnection();
-		
-		PreparedStatement ps = conn.prepareStatement(INSERT_ACCOUNT);
-		
-		ps.setInt(1,  idClient);
-		ps.setDouble(2, sum);
-		
-		ps.executeUpdate();
+		getJdbcTemplate().update(INSERT_ACCOUNT, idClient, sum);
 	}
 	
-	private int getLatestCreatedAccount(int clientId) {
-		int accountId = -1;
-		try (Connection conn = dataSource.getConnection();
-				PreparedStatement ps = conn.prepareStatement(SELECT_LATEST_CREATED_ACCOUNT)){
-			ps.setInt(1, clientId);
-			ResultSet rs = ps.executeQuery();
-			rs.next();
-			accountId = rs.getInt("id");
-		}catch(SQLException e) {
-			throw new RuntimeException(e);
-		}
+	@Transactional
+	private int getLatestCreatedAccount(int idClient) {		
+		int accountId = getJdbcTemplate().queryForObject(SELECT_LATEST_CREATED_ACCOUNT, Integer.class, idClient);
 		return accountId;
 	}
 	
 	@Transactional(
 			rollbackFor = SQLException.class)
 	private void insertTransaction(
-			int clientId, 
-			int accountId,
+			int idClient, 
+			int idAccount,
 			int type,
 			double sum, 
 			int currency) throws SQLException{
-		Connection conn = dataSource.getConnection();
-		
-		PreparedStatement ps = conn.prepareStatement(INSERT_RUB_TRANSACTION);
-		
-		ps.setInt(1,  clientId);
-		ps.setInt(2, accountId);
-		ps.setInt(3,  type);
-		ps.setDouble(4, sum);
-		ps.setInt(5, currency);
+
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		Date date = new Date();
-		ps.setString(6, dateFormat.format(date).toString());
 		
-		ps.executeUpdate();
+		getJdbcTemplate().update(INSERT_TRANSACTION, idClient, idAccount, type, sum, currency, dateFormat.format(date).toString());
+				
 	}
 
 }
