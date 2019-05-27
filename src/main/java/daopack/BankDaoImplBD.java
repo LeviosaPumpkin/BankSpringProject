@@ -139,8 +139,7 @@ public class BankDaoImplBD extends JdbcDaoSupport implements BankDao{
 		return result;
 	}
 	
-	@Transactional(
-			rollbackFor = SQLException.class)
+	@Transactional()
 	private void insertAccount(double sum, int idClient) throws SQLException{
 		getJdbcTemplate().update(INSERT_ACCOUNT, idClient, sum);
 	}
