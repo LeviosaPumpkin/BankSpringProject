@@ -15,8 +15,8 @@ public interface BankDao {
 		return new ArrayList<String>();
 	};
 	//public String getInfoAboutTransaction(int idTransaction); 
-	default String getClientsAccounts(int i) {
-		return "";
+	default List<String> getClientsAccounts(int i) {
+		return new ArrayList<String>();
 	}
 	
 }

@@ -8,6 +8,8 @@ import java.util.ArrayList;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -113,48 +115,30 @@ public class BankDaoImplBD extends JdbcDaoSupport implements BankDao{
 		}
 	}
 	
-	public String getClientsAccounts(int idClient) {
-		String result = "";
-		/*try (Connection conn = dataSource.getConnection();
-				PreparedStatement ps = conn.prepareStatement(SELECT_ACCOUNTS)){
-			ps.setInt(1, idClient);
-			ResultSet rs = ps.executeQuery();
-			while(rs.next()) {
-				System.out.print(rs.getInt("id")+"\t");
-				System.out.print(rs.getString("name")+"\t");
-				System.out.println(rs.getDouble("balance"));
-			}
-			
-		}catch(SQLException e) {
-			throw new RuntimeException(e);
-		}*/
+	@Transactional
+	public List<String> getClientsAccounts(int idClient) {
+		List<Map<String,Object>> rows = getJdbcTemplate().queryForList(SELECT_ACCOUNTS, idClient);
+
+		List<String> result = new ArrayList<>();
+		rows.forEach((row) -> {
+			result.add(row.get("id")+" "+row.get("Name")+" "+row.get("balance"));
+		});
+		
 		return result;
 	}
 	
+	@Transactional
 	public List<String> getListOfTransactions(int idClient, String dateFrom, String dateTo){
+		
+		List<Map<String,Object>> rows = getJdbcTemplate().queryForList(SELECT_CLIENT_TRANSACTIONS, new Object [] {dateFrom, dateTo, idClient});
+
 		List<String> result = new ArrayList<>();
-		/*try (Connection conn = dataSource.getConnection();
-				PreparedStatement ps = conn.prepareStatement(SELECT_CLIENT_TRANSACTIONS)){
-			ps.setString(1, dateFrom);
-			ps.setString(2, dateTo);
-			ps.setInt(3, idClient);
-			ResultSet rs = ps.executeQuery();
-			while(rs.next()) {
-				String res = rs.getInt("clientId") + " ";
-				res += rs.getInt(2) + " ";
-				res += rs.getString(3) + " ";
-				res += rs.getDouble(4) + " ";
-				res += rs.getString(5) + " ";
-				res += rs.getString(6);
-				result.add(res);
-				System.out.println(res);
-			}
-			
-		}catch(SQLException e) {
-			throw new RuntimeException(e);
-		}*/
+		rows.forEach((row) -> {
+			result.add(row.get("clientId")+" "+row.get("accountId")+" "+row.get("type")+" "+row.get("sum")+" "+row.get("name")+" "+row.get("date"));
+		});
 		return result;
 	}
+	
 	@Transactional(
 			rollbackFor = SQLException.class)
 	private void insertAccount(double sum, int idClient) throws SQLException{
