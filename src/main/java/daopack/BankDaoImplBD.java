@@ -58,12 +58,15 @@ public class BankDaoImplBD extends JdbcDaoSupport implements BankDao{
 			"JOIN Client ON Account.clientId = Client.id " + 
 			"WHERE Account.clientId = ?";
 	private static final String SELECT_CLIENT_TRANSACTIONS = 
-			"SELECT Transactions.clientId, Transactions.accountId, TransactionDict.type, Transactions.sum, CurrencyDict.name, Transactions.date " + 
+			"SELECT Transactions.clientId, Transactions.accountId, TransactionDict.type, Transactions.sum, CurrencyDict.name, Transactions.rate, Transactions.date " + 
 			"FROM Transactions " + 
 			"JOIN TransactionDict ON TransactionDict.id=Transactions.type " + 
 			"JOIN CurrencyDict ON CurrencyDict.id=Transactions.currency " + 
-			"WHERE datetime(date) in (datetime(?), datetime(?)) " + 
+			"WHERE datetime(date)  >= datetime(?) AND datetime(date) <=  datetime(?) " + 
 			"AND clientId=?";
+	private static final String INSERT_TRANSACTION_RATE = "INSERT INTO Transactions "
+			+ "(clientId, accountId, type, sum, currency, rate, date) "
+			+ "VALUES(?, ?, ?, ?, ?, ?, ?)";
 		
 	public BankDaoImplBD() {
 		
@@ -75,9 +78,22 @@ public class BankDaoImplBD extends JdbcDaoSupport implements BankDao{
 	}
 	
 	@Transactional(rollbackFor = SQLException.class)
-	public void makeDeposit(double sum, int idClient, int idAccount) {
+	public void makeDeposit(double sum, int idClient, int idAccount, int currency) {
 		try{
-			insertTransaction(idClient, idAccount, Type.DEPOSIT.getId(), sum, Currency.RUB.getId());
+			if(currency == 1) { 
+				int rate = 64;
+				insertTransaction(idClient, idAccount, Type.DEPOSIT.getId(), sum, currency, rate);
+
+				sum=sum*rate;
+			}
+			else if (currency == 2) {
+				int rate = 74;
+				insertTransaction(idClient, idAccount, Type.DEPOSIT.getId(), sum, currency, rate);
+
+				sum=sum*rate;
+			}else {
+				insertTransaction(idClient, idAccount, Type.DEPOSIT.getId(), sum, currency);
+			}
 			getJdbcTemplate().update(UPDATE_BALANCE, sum, idClient, idAccount);
 		}catch(SQLException e) {
 			throw new RuntimeException(e);
@@ -85,10 +101,23 @@ public class BankDaoImplBD extends JdbcDaoSupport implements BankDao{
 	}
 	
 	@Transactional(rollbackFor = SQLException.class)
-	public void makeWithdraw(double sum, int idClient, int idAccount) {
+	public void makeWithdraw(double sum, int idClient, int idAccount, int currency) {
 		try {
+			if(currency == 1) { 
+				int rate = 64;
+				insertTransaction(idClient, idAccount, Type.WITHDRAW.getId(), sum, currency, rate);
+
+				sum=sum*rate;
+			}
+			else if (currency == 2) {
+				int rate = 74;
+				insertTransaction(idClient, idAccount, Type.WITHDRAW.getId(), sum, currency, rate);
+
+				sum=sum*rate;
+			}else {
+				insertTransaction(idClient, idAccount, Type.WITHDRAW.getId(), sum, currency);
+			}
 			getJdbcTemplate().update(UPDATE_BALANCE, sum*(-1), idClient, idAccount);
-			insertTransaction(idClient, idAccount, Type.WITHDRAW.getId(), sum, Currency.RUB.getId());
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -103,13 +132,18 @@ public class BankDaoImplBD extends JdbcDaoSupport implements BankDao{
 		try {
 			if(currency == 1) {
 				insertAccount(sum * 64, idClient);
+				int idAccount = getLatestCreatedAccount(idClient);
+				insertTransaction(idClient, idAccount, Type.OPEN.getId(), sum, currency, 64);
 			}else if (currency == 2) {
 				insertAccount(sum * 74, idClient);
+				int idAccount = getLatestCreatedAccount(idClient);
+				insertTransaction(idClient, idAccount, Type.OPEN.getId(), sum, currency, 74);
 			}else if (currency == 3) {
 				insertAccount(sum, idClient);
+				int idAccount = getLatestCreatedAccount(idClient);
+				insertTransaction(idClient, idAccount, Type.OPEN.getId(), sum, currency);
 			}
-			int idAccount = getLatestCreatedAccount(idClient);
-			insertTransaction(idClient, idAccount, Type.OPEN.getId(), sum, currency);
+			
 		}catch(SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -134,12 +168,12 @@ public class BankDaoImplBD extends JdbcDaoSupport implements BankDao{
 
 		List<String> result = new ArrayList<>();
 		rows.forEach((row) -> {
-			result.add(row.get("clientId")+" "+row.get("accountId")+" "+row.get("type")+" "+row.get("sum")+" "+row.get("name")+" "+row.get("date"));
+			result.add(row.get("clientId")+" "+row.get("accountId")+" "+row.get("type")+" "+row.get("sum")+" "+row.get("name")+" "+row.get("rate")+" "+row.get("date"));
 		});
 		return result;
 	}
 	
-	@Transactional()
+	@Transactional(rollbackFor = SQLException.class)
 	private void insertAccount(double sum, int idClient) throws SQLException{
 		getJdbcTemplate().update(INSERT_ACCOUNT, idClient, sum);
 	}
@@ -150,8 +184,7 @@ public class BankDaoImplBD extends JdbcDaoSupport implements BankDao{
 		return accountId;
 	}
 	
-	@Transactional(
-			rollbackFor = SQLException.class)
+	@Transactional
 	private void insertTransaction(
 			int idClient, 
 			int idAccount,
@@ -166,4 +199,19 @@ public class BankDaoImplBD extends JdbcDaoSupport implements BankDao{
 				
 	}
 
+	@Transactional
+	private void insertTransaction(
+			int idClient, 
+			int idAccount,
+			int type,
+			double sum, 
+			int currency,
+			double rate) throws SQLException{
+
+		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		Date date = new Date();
+		
+		getJdbcTemplate().update(INSERT_TRANSACTION_RATE, idClient, idAccount, type, sum, currency, rate, dateFormat.format(date).toString());
+				
+	}
 }

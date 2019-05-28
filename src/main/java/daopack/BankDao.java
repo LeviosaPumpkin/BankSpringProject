@@ -7,10 +7,14 @@ import javax.sql.DataSource;
 
 public interface BankDao {
 	void addClient(String name);
-	void makeDeposit(double sum, int idClient, int idAccount);
-	void makeWithdraw(double sum, int idClient, int idAccount);
+	default void makeDeposit(double sum, int idClient, int idAccount) {};
+	default void makeDeposit(double sum, int idClient, int idAccount, int currency) {};
+	default void makeWithdraw(double sum, int idClient, int idAccount) {};
+	default void makeWithdraw(double sum, int idClient, int idAccount,int currency) {};
 	default void makeAccount(double sum, int idClient) {};
 	default void makeAccount(double sum, int idClient, int currency) {};
+	default void makeAccount(double sum, int idClient, int currency, double rate) {};
+
 	default List<String> getListOfTransactions(int idClient, String dateFrom, String dateTo){
 		return new ArrayList<String>();
 	};

@@ -29,14 +29,14 @@ public class Main {
 				new AnnotationConfigApplicationContext(BankConfiguration.class);
 		
 		BankDao bankDao = context.getBean(BankDao.class);
-		//bankDao.addClient("Max");
-		//bankDao.makeAccount(17000, 3, 3);
-		//bankDao.makeDeposit(1000, 3, 8);
-		//bankDao.makeWithdraw(500, 3, 8);
+		//bankDao.addClient("Anton");
+		//bankDao.makeAccount(1000, 4, 3);
+		//bankDao.makeDeposit(1000.0, 4, 9, 2);
+		bankDao.makeWithdraw(500, 4, 9, 1);
 		//bankDao.getClientsAccounts(1);
 		//bankDao.getListOfTransactions(1, "2019-05-08 12:51:12", "2019-05-09 11:06:34");
 		//bankDao.makeAccount(12000, 2, 1);
-		bankDao.getListOfTransactions(3,"2019-05-08 13:00:13", "2019-05-15 20:34:01").forEach((row) -> {
+		bankDao.getListOfTransactions(4,"2019-05-08 13:00:13", "2019-05-30 20:34:01").forEach((row) -> {
 			System.out.println(row);
 		});
 
