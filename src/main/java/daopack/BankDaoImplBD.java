@@ -20,29 +20,13 @@ import java.text.SimpleDateFormat;
 import javax.sql.DataSource;
 
 import org.springframework.transaction.annotation.Transactional;
+
+import currencyratepack.CurrencyRate;
+
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 
 public class BankDaoImplBD extends JdbcDaoSupport implements BankDao{
-	private enum Currency{
-		USD(1), EUR(2), RUB(3);
-		private int id;
-		Currency(int id){
-			this.id = id;
-		}
-		public int getId() {
-			return id;
-		}
-	}
-	private enum Type{
-		WITHDRAW(1), OPEN(2), CLOSE(3), DEPOSIT(4);
-		private int id;
-		Type(int id){
-			this.id = id;
-		}
-		public int getId() {
-			return id;
-		}
-	}
+	
 	private static final String INSERT_CLIENT = "INSERT INTO Client (name) VALUES(?)";
 	private static final String INSERT_ACCOUNT = "INSERT INTO Account (clientId, balance) VALUES(?,?)"; 
 	private static final String INSERT_TRANSACTION = "INSERT INTO Transactions "
@@ -80,16 +64,12 @@ public class BankDaoImplBD extends JdbcDaoSupport implements BankDao{
 	@Transactional(rollbackFor = SQLException.class)
 	public void makeDeposit(double sum, int idClient, int idAccount, int currency) {
 		try{
-			if(currency == 1) { 
-				int rate = 64;
+			if(currency != 3 ) { 
+				double rate = CurrencyRate.getRate(currency);
+				
+				if(rate == CurrencyRate.NO_CURRENCY) return;
+				
 				insertTransaction(idClient, idAccount, Type.DEPOSIT.getId(), sum, currency, rate);
-
-				sum=sum*rate;
-			}
-			else if (currency == 2) {
-				int rate = 74;
-				insertTransaction(idClient, idAccount, Type.DEPOSIT.getId(), sum, currency, rate);
-
 				sum=sum*rate;
 			}else {
 				insertTransaction(idClient, idAccount, Type.DEPOSIT.getId(), sum, currency);
@@ -103,16 +83,12 @@ public class BankDaoImplBD extends JdbcDaoSupport implements BankDao{
 	@Transactional(rollbackFor = SQLException.class)
 	public void makeWithdraw(double sum, int idClient, int idAccount, int currency) {
 		try {
-			if(currency == 1) { 
-				int rate = 64;
+			if(currency != 3 ) { 
+				double rate = CurrencyRate.getRate(currency);
+				
+				if(rate == CurrencyRate.NO_CURRENCY) return;
+				
 				insertTransaction(idClient, idAccount, Type.WITHDRAW.getId(), sum, currency, rate);
-
-				sum=sum*rate;
-			}
-			else if (currency == 2) {
-				int rate = 74;
-				insertTransaction(idClient, idAccount, Type.WITHDRAW.getId(), sum, currency, rate);
-
 				sum=sum*rate;
 			}else {
 				insertTransaction(idClient, idAccount, Type.WITHDRAW.getId(), sum, currency);
@@ -130,15 +106,13 @@ public class BankDaoImplBD extends JdbcDaoSupport implements BankDao{
 			return;
 		}
 		try {
-			if(currency == 1) {
-				insertAccount(sum * 64, idClient);
+			if(currency != 3) {
+				double rate = CurrencyRate.getRate(currency);
+				if (rate == CurrencyRate.NO_CURRENCY) return;
+				insertAccount(sum * rate, idClient);
 				int idAccount = getLatestCreatedAccount(idClient);
-				insertTransaction(idClient, idAccount, Type.OPEN.getId(), sum, currency, 64);
-			}else if (currency == 2) {
-				insertAccount(sum * 74, idClient);
-				int idAccount = getLatestCreatedAccount(idClient);
-				insertTransaction(idClient, idAccount, Type.OPEN.getId(), sum, currency, 74);
-			}else if (currency == 3) {
+				insertTransaction(idClient, idAccount, Type.OPEN.getId(), sum, currency, rate);
+			}else {
 				insertAccount(sum, idClient);
 				int idAccount = getLatestCreatedAccount(idClient);
 				insertTransaction(idClient, idAccount, Type.OPEN.getId(), sum, currency);

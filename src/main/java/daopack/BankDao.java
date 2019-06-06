@@ -6,6 +6,27 @@ import java.util.List;
 import javax.sql.DataSource;
 
 public interface BankDao {
+	public enum Currency{
+		USD(1), EUR(2), RUB(3);
+		private int id;
+		Currency(int id){
+			this.id = id;
+		}
+		public int getId() {
+			return id;
+		}
+	}
+	public enum Type{
+		WITHDRAW(1), OPEN(2), CLOSE(3), DEPOSIT(4);
+		private int id;
+		Type(int id){
+			this.id = id;
+		}
+		public int getId() {
+			return id;
+		}
+	}
+	
 	void addClient(String name);
 	default void makeDeposit(double sum, int idClient, int idAccount) {};
 	default void makeDeposit(double sum, int idClient, int idAccount, int currency) {};

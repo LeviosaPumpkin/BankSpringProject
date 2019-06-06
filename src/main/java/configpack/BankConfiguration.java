@@ -27,6 +27,11 @@ public class BankConfiguration {
     public DataSource dataSource(){
     	DriverManagerDataSource dataSource = new DriverManagerDataSource();
     	dataSource.setDriverClassName(ClientDriver.class.getName());
+    	try {
+			Class.forName("com.mysql.jdbc.Driver");
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
     	dataSource.setUrl("jdbc:sqlite:resources/bank.db");
     	return dataSource;
     }
